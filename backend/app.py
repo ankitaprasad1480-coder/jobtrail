@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv()
 
+import re
 import os
 from flask import Flask
 
@@ -15,11 +16,16 @@ from blueprints.upload_bp import upload_bp
 def create_app():
     app = Flask(__name__)
 
-    db_url = os.getenv("DATABASE_URL", "sqlite:///jobapp.db")
-    if db_url.startswith("postgres://"):
-        db_url = db_url.replace("postgres://", "postgresql+pg8000://", 1)
-    elif db_url.startswith("postgresql://"):
-        db_url = db_url.replace("postgresql://", "postgresql+pg8000://", 1)
+db_url = os.getenv("DATABASE_URL", "sqlite:///jobapp.db")
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql+pg8000://", 1)
+elif db_url.startswith("postgresql://"):
+    db_url = db_url.replace("postgresql://", "postgresql+pg8000://", 1)
+
+if db_url.startswith("postgresql+pg8000://"):
+    db_url = re.sub(r"\?.*$", "", db_url)  # strip any existing query string
+    db_url += "?ssl_context=true"
+
     app.config["SQLALCHEMY_DATABASE_URI"] = db_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET", "change-this-in-production")
