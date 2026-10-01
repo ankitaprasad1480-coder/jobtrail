@@ -15,7 +15,12 @@ from blueprints.upload_bp import upload_bp
 def create_app():
     app = Flask(__name__)
 
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///jobapp.db")
+    db_url = os.getenv("DATABASE_URL", "sqlite:///jobapp.db")
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql+pg8000://", 1)
+    elif db_url.startswith("postgresql://"):
+        db_url = db_url.replace("postgresql://", "postgresql+pg8000://", 1)
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET", "change-this-in-production")
     app.config["UPLOAD_FOLDER"] = os.path.join(os.path.dirname(__file__), "uploads", "resumes")
