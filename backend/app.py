@@ -3,6 +3,7 @@ load_dotenv()
 
 import re
 import os
+import ssl
 from flask import Flask
 
 from extensions import db, jwt, cors
@@ -21,17 +22,21 @@ def get_db_url():
         db_url = db_url.replace("postgresql://", "postgresql+pg8000://", 1)
 
     if db_url.startswith("postgresql+pg8000://"):
-        db_url = re.sub(r"\?.*$", "", db_url)  # strip any existing query string
-        db_url += "?ssl_context=true"
+        db_url = re.sub(r"\?.*$", "", db_url)  # pg8000 doesn't understand sslmode etc.
     return db_url
 
 
 def create_app():
     app = Flask(__name__)
 
-    app.config["SQLALCHEMY_DATABASE_URI"] = get_db_url()
+        db_url = get_db_url()
+        engine_options = {"pool_pre_ping": True}
+        if db_url.startswith("postgresql+pg8000://") and os.getenv("DB_SSL", "true").lower() != "false":
+            engine_options["connect_args"] = {"ssl_context": ssl.create_default_context()}
+
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True}
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = engine_options
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET", "change-this-in-production")
     app.config["UPLOAD_FOLDER"] = os.path.join(os.path.dirname(__file__), "uploads", "resumes")
     app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024  # 5 MB limit
