@@ -1,3 +1,9 @@
+from dotenv import load_dotenv
+load_dotenv()
+
+import os
+
+
 import httpx
 from datetime import datetime
 from typing import Iterable
@@ -110,8 +116,12 @@ class GreenhouseCompanySource(JobSource):
             }
 
 
-ACTIVE_SOURCES = [
-    ArbeitnowSource(),
-    AdzunaSource(app_id="a75b5cff", app_key="8b8a3f250eefe088589905cb1574d24f", country="us"),
-    AdzunaSource(app_id="a75b5cff", app_key="8b8a3f250eefe088589905cb1574d24f", country="in"),
-]
+ACTIVE_SOURCES = [ArbeitnowSource()]
+
+_adzuna_id = os.getenv("ADZUNA_APP_ID")
+_adzuna_key = os.getenv("ADZUNA_APP_KEY")
+if _adzuna_id and _adzuna_key:
+    ACTIVE_SOURCES += [
+        AdzunaSource(app_id=_adzuna_id, app_key=_adzuna_key, country="us"),
+        AdzunaSource(app_id=_adzuna_id, app_key=_adzuna_key, country="in"),
+    ]
