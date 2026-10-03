@@ -26,17 +26,23 @@ def get_db_url():
     return db_url
 
 
+def get_engine_options(db_url):
+    options = {"pool_pre_ping": True}
+    if db_url.startswith("postgresql+pg8000://") and os.getenv("DB_SSL", "true").lower() != "false":
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        options["connect_args"] = {"ssl_context": ctx}
+    return options
+
+
 def create_app():
     app = Flask(__name__)
 
-        db_url = get_db_url()
-        engine_options = {"pool_pre_ping": True}
-        if db_url.startswith("postgresql+pg8000://") and os.getenv("DB_SSL", "true").lower() != "false":
-            engine_options["connect_args"] = {"ssl_context": ssl.create_default_context()}
-
+    db_url = get_db_url()
     app.config["SQLALCHEMY_DATABASE_URI"] = db_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = engine_options
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = get_engine_options(db_url)
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET", "change-this-in-production")
     app.config["UPLOAD_FOLDER"] = os.path.join(os.path.dirname(__file__), "uploads", "resumes")
     app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024  # 5 MB limit
